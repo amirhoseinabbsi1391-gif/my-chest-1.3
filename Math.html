@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>رمزگذاری با فرمول‌</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js">
+<script src="Math.js" defer></script>
+</script>
+  <style>
+    body { font-family: sans-serif; background:#f8f9fa; padding:20px; }
+    .box { background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:16px; }
+    label { font-weight:600; display:block; margin-bottom:6px; }
+    textarea, input { width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; margin-bottom:10px; }
+    .btn { background:#0d6efd; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; }
+    .btn:hover { background:#0b5ed7; }
+    .out { background:#f1f3f5; padding:10px; border-radius:6px; font-family:monospace; }
+  </style>
+</head>
+<body>
+
+  <h2>رمزگذاری با فرمول‌های ریاضی</h2>
+
+  <div class="box">
+    <label>برای حروف مقدار تعریف کنید</label>
+    <textarea id="mappingInput" rows="5">س=10
+ل=20
+ا=30
+م=40</textarea>
+  </div>
+
+  <div class="box">
+    <label>فرمول</label>
+    <input id="formulaInput" value="sin(س) + log(ل) + sqrt(ا^2 + م)" />
+    <button class="btn" onclick="compute()">محاسبه</button>
+  </div>
+
+  <div class="box">
+    <label>خروجی</label>
+    <div id="output" class="out">—</div>
+  </div>
+
+<script>
+function parseMapping(text) {
+  const mapping = {};
+  const lines = text.split(/\r?\n/);
+  for (let line of lines) {
+    if (!line.trim()) continue;
+    const [char, val] = line.split('=');
+    mapping[char.trim()] = Number(val.trim());
+  }
+  return mapping;
+}
+
+function compute() {
+  const mappingText = document.getElementById('mappingInput').value;
+  const formula = document.getElementById('formulaInput').value;
+  const output = document.getElementById('output');
+
+  try {
+    const mapping = parseMapping(mappingText);
+    let expr = formula;
+
+    // جایگزینی حروف با مقادیر
+    for (const [char, val] of Object.entries(mapping)) {
+      const re = new RegExp(char, 'g');
+      expr = expr.replace(re, val);
+    }
+
+    // محاسبه با math.js
+    const result = math.evaluate(expr);
+    output.textContent = `عبارت نهایی: ${expr}\nخروجی: ${result}`;
+  } catch (e) {
+    output.textContent = "خطا در محاسبه: " + e.message;
+  }
+}
+</script>
+
+</body>
+</html>

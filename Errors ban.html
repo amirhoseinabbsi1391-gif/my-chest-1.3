@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>DevTools Error Storm</title>
+  <style>
+    body {
+      margin: 0;
+      background: #fff; /* پس‌زمینه خالی */
+    }
+    .error {
+      position: fixed;
+      width: 300px;
+      background: #ece9d8;
+      border: 2px solid #aca899;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.25);
+      font-family: Tahoma, sans-serif;
+      z-index: 999999;
+    }
+    .title {
+      background: #0a64ad;
+      color: #fff;
+      padding: 4px 8px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+    }
+    .close {
+      cursor: pointer;
+      background: #d9d9d9;
+      border: 1px solid #7f7f7f;
+      width: 18px;
+      height: 18px;
+      text-align: center;
+      line-height: 18px;
+    }
+    .body {
+      padding: 10px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+<script>
+(function(){
+  let detected = false;
+
+  function isDevToolsOpen() {
+    const wDiff = Math.abs(window.outerWidth - window.innerWidth);
+    const hDiff = Math.abs(window.outerHeight - window.innerHeight);
+    return (wDiff > 160 || hDiff > 160);
+  }
+
+  function markDetected() {
+    if (detected) return;
+    detected = true;
+    setTimeout(() => spawnErrors(100), 5000);
+  }
+
+  function spawnErrors(n) {
+    for (let i=0; i<n; i++) {
+      createError(i+1);
+    }
+  }
+
+  function createError(idx) {
+    const box = document.createElement("div");
+    box.className = "error";
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = "Error";
+    const close = document.createElement("div");
+    close.className = "close";
+    close.textContent = "×";
+    close.onclick = () => box.remove();
+    title.appendChild(close);
+    const body = document.createElement("div");
+    body.className = "body";
+    body.textContent = "Critical error code: " + idx;
+    box.appendChild(title);
+    box.appendChild(body);
+    box.style.left = Math.random()*(window.innerWidth-320)+"px";
+    box.style.top  = Math.random()*(window.innerHeight-120)+"px";
+    document.body.appendChild(box);
+  }
+
+  window.addEventListener("resize", () => {
+    if (isDevToolsOpen()) markDetected();
+  });
+  window.addEventListener("keydown", e => {
+    if (e.key==="F12" || (e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key.toUpperCase()))) {
+      markDetected();
+    }
+  });
+  setInterval(() => {
+    if (isDevToolsOpen()) markDetected();
+  }, 1000);
+})();
+</script>
+</body>
+</html>

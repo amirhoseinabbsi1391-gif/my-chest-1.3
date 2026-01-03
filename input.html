@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ثبت نام</title>
+<style>
+/* ====== Reset ====== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ====== Background ====== */
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4, #a18cd1, #fbc2eb);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+}
+
+/* ====== Glass Form ====== */
+.form-container {
+    backdrop-filter: blur(15px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 40px;
+    width: 350px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.form-container h2 {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 25px;
+}
+
+.form-container input {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 10px 0;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size: 16px;
+}
+
+.form-container input::placeholder {
+    color: #e0e0e0;
+}
+
+.form-container button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.3);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.form-container button:hover {
+    background: rgba(255,255,255,0.5);
+}
+
+/* Error message */
+.error {
+    color: #ff8080;
+    text-align: center;
+    margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>ثبت نام</h2>
+    <form id="registerForm">
+        <input type="text" id="name" placeholder="نام کاربری" required>
+        <input type="email" id="email" placeholder="ایمیل" required>
+        <input type="text" id="phoneNumber" placeholder="شماره تلفن "><br>
+        <input type="text" id="userPhone" placeholder=" تایید شماره تلفن " />
+                <input type="password" id="password" placeholder="رمز عبور" required>
+        <input type="password" id="confirmPassword" placeholder="تأیید رمز عبور" required>
+        <button type="submit">ثبت نام</button>
+        <button onclick="window.location.href='index1.html'">برو به سایت
+        <div class="error" id="errorMsg"></div>
+    </form>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', function(e){
+    e.preventDefault();
+
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const errorMsg = document.getElementById('errorMsg');
+
+    // بررسی رمز عبور
+    if(password !== confirmPassword){
+        errorMsg.textContent = "رمز عبور و تأیید آن مطابقت ندارند!";
+        return;
+    }
+
+    // بررسی نام‌های خاص
+    if(username === "A!A" || name === "A!SH"){
+        window.location.href = "working.html";
+        return;
+    }
+
+    // ذخیره اطلاعات در localStorage
+    localStorage.setItem('name', name);
+    localStorage.setItem('email', email);
+
+    // هدایت به page1
+    window.location.href = "index1.html";
+});
+</script>
+<script>
+const API = "https://script.google.com/macros/s/AKfycbx4wPjxhQDDJDyAVPAHcKJ2UG7uZlBpv2vd2dA-deyOS8Ms4oo3wqJJ1MPKpeKYl34g/exec";
+
+document.querySelector("form").addEventListener("submit", function(e){
+  e.preventDefault();
+
+  const f = e.target;
+
+  fetch(API,{
+    method:"POST",
+    body: JSON.stringify({
+      name: f.name.value,
+      email: f.email.value,
+      password: f.password.value
+    })
+  }).then(()=>alert("ثبت شد ✅"));
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>رمزگذاری پیشرفته فایل</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#1e1e2f; --panel:#121220; --soft:#2e2e3e; --acc:#6fa095; --acc2:#00ffd1; --txt:#fff; --muted:#bbb;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--txt);
+      font-family: Tahoma, Vazirmatn, sans-serif;
+      padding: 24px;
+      text-align: center;
+    }
+    h2,h3 { color: var(--acc); margin: 10px 0; }
+    .wrap { max-width: 960px; margin: 0 auto; text-align: center; }
+    input, select {
+      width: min(820px, 92%);
+      margin: 8px auto;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: none; outline: none;
+      background: var(--soft); color: #eee;
+    }
+    input[type="password"], select { color: var(--acc2); }
+    button {
+      padding: 10px 16px;
+      background-color: var(--acc);
+      color: #000; font-weight: bold; font-size: 15px;
+      border: none; border-radius: 10px; margin: 6px; cursor: pointer;
+    }
+    button:hover { background-color: #00bfa3; }
+    .panel {
+      background:  ;
+      border: 1px solid #21213b;
+      border-radius: 12px;
+      padding: 14px;
+      width: min(860px, 96%);
+      margin: 14px auto;
+      text-align: right;
+    }
+    .row { display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
+    .row > * { flex: 0 0 auto; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    progress {
+      width: min(820px, 92%); height: 14px;
+      accent-color: var(--acc);
+      margin-top: 6px;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+    th, td { border-bottom: 1px solid #2a2a40; padding: 8px; text-align: center; }
+    th { color: var(--acc2); }
+    .badge { background:#1f3640; color:#9df; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+    .left { text-align: left; direction: ltr; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h2>رمزگذاری و رمزگشایی فایل</h2>
+
+  <div class="panel">
+    <div class="row">
+      <input id="password" placeholder="کلید رمزگذاری" type="password" />
+      <select id="algo">
+        <option value="AES-GCM">AES-GCM (پیشنهادی)</option>
+        <option value="AES-CBC">AES-CBC</option>
+        <option value="AES-CTR">AES-CTR</option>
+      </select>
+    </div>
+    <div class="hint">برای هر عملیات، <b>salt</b> و <b>IV/Counter</b> به‌صورت تصادفی ساخته و همراه خروجی ذخیره می‌شود.</div>
+  </div>
+
+  <div class="panel">
+    <h3>فایل</h3>
+    <input type="file" id="inputFile" />
+    <progress id="prog" value="0" max="100"></progress>
+    <div class="row">
+      <button id="btnEncFile"> رمزگذاری فایل</button>
+      <button id="btnDecFile"> رمزگشایی فایل</button>
+      <button id="btnClearFile"> پاک‌کردن انتخاب فایل</button>
+      <button onclick="window.location.href='page3.html'"></button>
+    </div>
+    <div class="hint">پیشرفت فقط مرحلهٔ خواندن/نوشتن فایل را نمایش می‌دهد (WebCrypto پیشرفت مرحلهٔ رمزنگاری را ارائه نمی‌کند).</div>
+  </div>
+
+  <div class="panel">
+    <h3>تاریخچهٔ عملیات</h3>
+    <div class="row">
+      <button id="btnClearHistory"> پاک‌کردن تاریخچه</button>
+      <span id="historyCount" class="badge">0 مورد</span>
+    </div>
+    <div id="historyBox"></div>
+  </div>
+</div>
+
+<script>
+/* ====== ابزارهای کمکی/ثابت‌ها ====== */
+const MAGIC = new TextEncoder().encode('ENC1'); // 4 bytes
+const ALGO_CODE = { 'AES-GCM':0, 'AES-CBC':1, 'AES-CTR':2 };
+const CODE_ALGO = { 0:'AES-GCM', 1:'AES-CBC', 2:'AES-CTR' };
+const IV_LEN   = { 'AES-GCM':12, 'AES-CBC':16, 'AES-CTR':16 };
+const SALT_LEN = 16;
+
+const $ = (id)=>document.getElementById(id);
+const te = (s)=>new TextEncoder().encode(s);
+
+function u8cat(...chunks){
+  const total = chunks.reduce((a,c)=>a + c.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for(const c of chunks){ out.set(c, off); off += c.length; }
+  return out;
+}
+function setProgress(v){ $('prog').value = v; }
+function resetProgress(){ setProgress(0); }
+
+/* ====== PBKDF2 با Salt تصادفی ====== */
+async function deriveKey(password, algoName, salt){
+  const pwKey = await crypto.subtle.importKey('raw', te(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt, iterations:100000, hash:'SHA-256' },
+    pwKey,
+    { name:algoName, length:256 },
+    false,
+    ['encrypt','decrypt']
+  );
+}
+
+/* ====== بسته‌بندی/گشودن هدر ======
+   ساختار: [ 'E','N','C','1' ][algoCode:1][ivLen:1][saltLen:1][salt][iv][ciphertext]
+*/
+function pack(algoName, salt, iv, ciphertext){
+  const header = new Uint8Array([ ALGO_CODE[algoName], iv.length, salt.length ]);
+  return u8cat(MAGIC, header, salt, iv, new Uint8Array(ciphertext));
+}
+function unpack(u8){
+  if (u8.length < 7) throw new Error('داده نامعتبر است (خیلی کوتاه).');
+  if (!(u8[0]===69 && u8[1]===78 && u8[2]===67 && u8[3]===49)) { // 'E','N','C','1'
+    throw new Error('هدر ENC1 یافت نشد.');
+  }
+  const algoCode = u8[4];
+  const ivLen = u8[5];
+  const saltLen = u8[6];
+  const offSalt = 7;
+  const offIv = offSalt + saltLen;
+  const offData = offIv + ivLen;
+  if (u8.length < offData+1) throw new Error('طول هدر/داده نامعتبر است.');
+  const algoName = CODE_ALGO[algoCode];
+  if (!algoName) throw new Error('الگوریتم ناشناخته در هدر.');
+  const salt = u8.slice(offSalt, offSalt+saltLen);
+  const iv   = u8.slice(offIv, offIv+ivLen);
+  const data = u8.slice(offData);
+  return { algoName, salt, iv, data };
+}
+
+/* ====== فایل: خواندن با پیشرفت ====== */
+function readFileAsArrayBufferWithProgress(file){
+  return new Promise((resolve, reject)=>{
+    const fr = new FileReader();
+    fr.onprogress = (ev)=>{
+      if (ev.lengthComputable) {
+        const pct = Math.round((ev.loaded / ev.total) * 80); // تا ۸۰٪ برای خواندن
+        setProgress(pct);
+      }
+    };
+    fr.onload = ()=> resolve(fr.result);
+    fr.onerror = ()=> reject(fr.error);
+    fr.readAsArrayBuffer(file);
+  });
+}
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 0);
+}
+
+/* ====== رمزگذاری/رمزگشایی فایل ====== */
+async function encryptFile(){
+  const fi = $('inputFile');
+  const password = $('password').value;
+  const algo = $('algo').value;
+  if (!fi.files.length) return alert('لطفاً فایل را انتخاب کنید.');
+  if (!password) return alert('لطفاً کلید را وارد کنید.');
+
+  const file = fi.files[0];
+  resetProgress();
+  try{
+    const buf = await readFileAsArrayBufferWithProgress(file);
+
+    const salt = crypto.getRandomValues(new Uint8Array(SALT_LEN));
+    const key = await deriveKey(password, algo, salt);
+    const iv  = crypto.getRandomValues(new Uint8Array(IV_LEN[algo]));
+
+    let params;
+    if (algo === 'AES-CTR') {
+      params = { name:'AES-CTR', counter: iv, length: 64 };
+    } else {
+      params = { name: algo, iv };
+    }
+
+    const encrypted = await crypto.subtle.encrypt(params, key, buf);
+    setProgress(90);
+
+    const packed = pack(algo, salt, iv, encrypted);
+    const blob = new Blob([packed], { type:'application/octet-stream' });
+    downloadBlob(blob, file.name + '.enc');
+
+    setProgress(100);
+    alert('فایل رمزگذاری شد و آماده دانلود است.');
+    addHistory({ action:'encrypt', algo, bytes: file.size, filename: file.name });
+  }catch(e){
+    alert('خطا: ' + e.message);
+    resetProgress();
+  }
+}
+
+async function decryptFile(){
+  const fi = $('inputFile');
+  const password = $('password').value;
+  if (!fi.files.length) return alert('لطفاً فایل .enc را انتخاب کنید.');
+  if (!password) return alert('لطفاً کلید را وارد کنید.');
+
+  const file = fi.files[0];
+  resetProgress();
+  try{
+    const buf = await readFileAsArrayBufferWithProgress(file);
+    const u8 = new Uint8Array(buf);
+    const { algoName, salt, iv, data } = unpack(u8);
+    const key = await deriveKey(password, algoName, salt);
+
+    let params;
+    if (algoName === 'AES-CTR') {
+      params = { name:'AES-CTR', counter: iv, length: 64 };
+    } else {
+      params = { name: algoName, iv };
+    }
+
+    const decrypted = await crypto.subtle.decrypt(params, key, data);
+    setProgress(95);
+
+    const outBlob = new Blob([decrypted]);
+    let name = file.name.endsWith('.enc') ? file.name.slice(0,-4) : (file.name + '.dec');
+    downloadBlob(outBlob, name);
+
+    setProgress(100);
+    alert('فایل رمزگشایی شد و آماده دانلود است.');
+    addHistory({ action:'decrypt', algo: algoName, bytes: data.byteLength, filename: name });
+  }catch(e){
+    alert('خطا: ' + e.message);
+    resetProgress();
+  }
+}
+
+/* ====== تاریخچهٔ عملیات (localStorage) ====== */
+const HIST_KEY = 'cryptoHistory_files_v1';
+function loadHistory(){
+  try{
+    const raw = localStorage.getItem(HIST_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch{ return []; }
+}
+function saveHistory(arr){
+  try{ localStorage.setItem(HIST_KEY, JSON.stringify(arr)); }catch{}
+}
+function addHistory(item){
+  const time = new Date().toLocaleString();
+  const rec = { time, ...item, kind:'file' };
+  const arr = loadHistory();
+  arr.unshift(rec);
+  if (arr.length > 10) arr.length = 10;
+  saveHistory(arr);
+  renderHistory();
+}
+function formatBytes(n){
+  if (n < 1024) return n + ' B';
+  const units = ['KB','MB','GB','TB'];
+  let i= -1; do { n/=1024; i++; } while(n>=1024 && i<units.length-1);
+  return n.toFixed(2) + ' ' + units[i];
+}
+function renderHistory(){
+  const arr = loadHistory();
+  $('historyCount').textContent = `${arr.length} مورد`;
+  if (!arr.length){ $('historyBox').innerHTML = '<div class="hint">هنوز عملیاتی انجام نشده است.</div>'; return; }
+  const rows = arr.map(r=>`
+    <tr>
+      <td>${r.time}</td>
+      <td>${r.action==='encrypt'?'رمزگذاری':'رمزگشایی'}</td>
+      <td>${r.algo}</td>
+      <td class="left">${r.filename || '-'}</td>
+      <td>${r.bytes!=null?formatBytes(r.bytes):'-'}</td>
+    </tr>
+  `).join('');
+  $('historyBox').innerHTML = `
+    <div style="overflow:auto">
+      <table>
+        <thead>
+          <tr><th>زمان</th><th>عملیات</th><th>الگوریتم</th><th>نام فایل</th><th>حجم</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ====== رخدادها / UI ====== */
+$('btnEncFile').addEventListener('click', encryptFile);
+$('btnDecFile').addEventListener('click', decryptFile);
+$('btnClearFile').addEventListener('click', ()=>{ $('inputFile').value = ''; resetProgress(); });
+
+$('btnClearHistory').addEventListener('click', ()=>{
+  if (confirm('تاریخچه پاک شود؟')) { localStorage.removeItem(HIST_KEY); renderHistory(); }
+});
+
+renderHistory();
+</script>
+<link rel="stylesheet" href="liquid-glass3.css">
+<link rel="stylesheet" href="liquid-glass2.css">
+<script src="liquid-glass.js" defer></script>
+</body>
+</html>

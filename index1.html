@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>Mysterious chest</title>
+  <style>
+    body, html {
+      margin: 0;
+      height: 100%;
+      background-color: #2b8690;
+      color: #fff;
+      font-family: Tahoma, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .wrapper {
+      width: 1880%;
+      height: 1800%;
+      perspective: 1200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #mainFrame {
+      width: 1300px;
+      height: 700px;
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      transform-style: preserve-3d;
+      transition: transform 0.1s linear;
+      background: #2e2e3e;
+    }
+
+    #mainFrame.active {
+      cursor: grab;
+    }
+
+    #extraInfo {
+      position: absolute;
+      bottom: 20px;
+      font-size: 13px;
+      color: #bbb;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <iframe id="mainFrame" src="page1.html"></iframe>
+    <div id="extraInfo">رو امتحان کن Ctrl+Shift </div>
+  </div>
+
+  <script>
+  (function(){
+    const frame = document.querySelector('#mainFrame');
+
+    let active = false;
+    let rotationX = 0;
+    let rotationY = 0;
+    let isDragging = false;
+    let startX, startY;
+
+    function enable3D(){
+      active = true;
+      frame.classList.add('active');
+    }
+
+    function disable3D(){
+      active = false;
+      frame.classList.remove('active');
+      frame.style.transform = '';
+    }
+
+    // فعال‌سازی با Ctrl+Shift
+    let pressedCtrl=false, pressedShift=false;
+    window.addEventListener('keydown', e=>{
+      if (e.key === 'Control') pressedCtrl = true;
+      if (e.key === 'Shift') pressedShift = true;
+
+      if (pressedCtrl && pressedShift){
+        e.preventDefault();
+        if(!active) enable3D(); else disable3D();
+      }
+    });
+    window.addEventListener('keyup', e=>{
+      if(e.key==='Control') pressedCtrl=false;
+      if(e.key==='Shift') pressedShift=false;
+    });
+
+    // کشیدن موس برای چرخش
+    window.addEventListener('mousedown', e=>{
+      if(!active) return;
+      isDragging=true;
+      startX=e.clientX;
+      startY=e.clientY;
+    });
+    window.addEventListener('mouseup', ()=> isDragging=false);
+    window.addEventListener('mousemove', e=>{
+      if(!active||!isDragging) return;
+
+      let dx=e.clientX-startX;
+      let dy=e.clientY-startY;
+      startX=e.clientX;
+      startY=e.clientY;
+
+      rotationY += dx*0.5;
+      rotationX -= dy*0.5;
+
+      frame.style.transform=`rotateX(${rotationX}deg) rotateY(${rotationY}deg) translateZ(50px)`;
+
+      if(Math.abs(rotationX) > 160 || Math.abs(rotationY) > 160){
+        window.location.href = "page2.html"; 
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
+
+

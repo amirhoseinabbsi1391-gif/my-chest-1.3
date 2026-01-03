@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>پنل مدیریت</title>
+
+<style>
+body{
+  font-family:tahoma;
+  background:#0f172a;
+  color:#fff;
+  padding:20px
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:15px
+}
+th,td{
+  border:1px solid #334155;
+  padding:8px;
+  text-align:center
+}
+button{
+  padding:5px 10px;
+  margin:2px;
+  cursor:pointer
+}
+.block{background:#dc2626;color:#fff}
+.unblock{background:#16a34a;color:#fff}
+</style>
+</head>
+
+<body>
+
+<h2>📊 پنل مدیریت کاربران</h2>
+<p id="stats"></p>
+
+<table id="table">
+<tr>
+  <th>نام</th>
+  <th>ایمیل</th>
+  <th>وضعیت</th>
+  <th>آخرین فعالیت</th>
+  <th>عملیات</th>
+</tr>
+</table>
+
+<script>
+// 🔹 لینک Web App گوگل
+const API = "https://script.google.com/macros/s/AKfycbx70gzeQLPX5Zuono5hq-XzImGmjiWpnvRXJUJTq5dfySY6xrGbRFHKtQ7r3EXefuqd/exec";
+
+// 🔹 دریافت و نمایش کاربران
+function loadUsers(){
+  fetch(API)
+    .then(res => res.json())
+    .then(users => {
+
+      const table = document.getElementById("table");
+      table.innerHTML = `
+        <tr>
+          <th>نام</th>
+          <th>ایمیل</th>
+          <th>وضعیت</th>
+          <th>آخرین فعالیت</th>
+          <th>عملیات</th>
+        </tr>`;
+
+      // 🔸 محاسبه آمار
+      let total = users.length;
+      let blocked = users.filter(u => u.blocked).length;
+
+      document.getElementById("stats").innerText =
+        `کل کاربران: ${total} | فعال: ${total-blocked} | مسدود: ${blocked}`;
+
+      // 🔸 نمایش هر کاربر
+      users.forEach(u => {
+        const tr = table.insertRow();
+        tr.insertCell(0).innerText = u.name;
+        tr.insertCell(1).innerText = u.email;
+        tr.insertCell(2).innerText = u.blocked ? "مسدود" : "فعال";
+        tr.insertCell(3).innerText = u.lastActivity || "-";
+
+        const actions = tr.insertCell(4);
+
+        // 🔹 دکمه بلاک / آن‌بلاک
+        const btn = document.createElement("button");
+        btn.innerText = u.blocked ? "آن‌بلاک" : "بلاک";
+        btn.className = u.blocked ? "unblock" : "block";
+        btn.onclick = () => toggleBlock(u.row, !u.blocked);
+        actions.appendChild(btn);
+
+        // 🔹 دکمه حذف
+        const del = document.createElement("button");
+        del.innerText = "حذف";
+        del.onclick = () => deleteUser(u.row);
+        actions.appendChild(del);
+      });
+    });
+}
+
+// 🔹 بلاک یا آن‌بلاک کاربر
+function toggleBlock(row, value){
+  fetch(API,{
+    method:"PUT",
+    body:JSON.stringify({
+      row: row,
+      column: 4,   // ستون blocked
+      value: value
+    })
+  }).then(loadUsers);
+}
+
+// 🔹 حذف کاربر
+function deleteUser(row){
+  if(!confirm("آیا کاربر حذف شود؟")) return;
+
+  fetch(API,{
+    method:"PUT",
+    body:JSON.stringify({
+      action:"delete",
+      row: row
+    })
+  }).then(loadUsers);
+}
+
+// 🔹 اجرای اولیه
+loadUsers();
+</script>
+
+</body>
+</html>
+
+
+
+
+

@@ -1,0 +1,260 @@
+/* ================= RESET ================= */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+}
+
+html,body{
+  width:100%;
+  min-height:100%;
+  overflow:auto;
+  background:#000;
+  color:#fff;
+  scroll-behavior:smooth;
+}
+
+/* ================= BACKGROUND ================= */
+.bg{
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 20% 20%,rgba(0,122,255,.35),transparent 40%),
+    radial-gradient(circle at 80% 30%,rgba(88,86,214,.35),transparent 40%),
+    radial-gradient(circle at 50% 80%,rgba(255,45,85,.25),transparent 45%);
+  filter:blur(80px);
+  animation:floatBg 30s ease-in-out infinite alternate;
+  z-index:-2;
+}
+@keyframes floatBg{
+  0%{transform:translateY(-40px);}
+  50%{transform:translateY(40px);}
+  100%{transform:translateY(-40px);}
+}
+
+/* ================= LIGHT ================= */
+.light{
+  position:fixed;
+  top:50%;
+  left:50%;
+  width:600px;
+  height:600px;
+  border-radius:50%;
+  background:radial-gradient(circle,
+    rgba(10,132,255,.3),
+    rgba(255,45,85,.25),
+    transparent 70%);
+  filter:blur(120px);
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  z-index:-1;
+  animation:lightPulse 6s ease-in-out infinite alternate;
+}
+@keyframes lightPulse{
+  0%{transform:translate(-50%,-50%) scale(1);}
+  50%{transform:translate(-50%,-50%) scale(1.12);}
+  100%{transform:translate(-50%,-50%) scale(1);}
+}
+
+/* ================= SCROLL WRAPPER ================= */
+.liquid-scroll{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:120px 12px;
+}
+
+/* ================= GLASS CARD ================= */
+.app{
+  width:min(94%,880px);
+  padding:36px;
+  border-radius:36px;
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(42px) saturate(180%);
+  -webkit-backdrop-filter:blur(42px);
+  box-shadow:
+    0 35px 100px rgba(0,0,0,.75),
+    inset 0 1px 0 rgba(255,255,255,.2);
+  position:relative;
+  overflow:hidden;
+  transition:transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ================= CARD HOVER EFFECT ================= */
+.app:hover{
+ rotateX(6deg) rotateY(-6deg) scale(1.03);
+  box-shadow:0 50px 140px rgba(0,0,0,.85),
+             inset 0 2px 0 rgba(255,255,255,.25);
+}
+
+/* ================= COLOR WAVES ================= */
+.app::before, .app::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:conic-gradient(
+    from 0deg,
+    rgba(10,132,255,.3),
+    rgba(88,86,214,.25),
+    rgba(255,45,85,.2),
+    rgba(10,132,255,.3)
+  );
+  mix-blend-mode:overlay;
+  opacity:0.4;
+  pointer-events:none;
+  animation:waveSpin 12s linear infinite;
+}
+.app::after{
+  animation-duration:18s;
+  opacity:0.3;
+}
+@keyframes waveSpin{
+  0%{transform:rotate(0deg);}
+  100%{transform:rotate(360deg);}
+}
+
+/* ================= INNER RADIAL WAVE ================= */
+.app .wave{
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:radial-gradient(circle at center,
+    rgba(255,255,255,.05),
+    transparent 70%);
+  animation:innerWave 6s ease-in-out infinite alternate;
+  pointer-events:none;
+  z-index:0;
+}
+@keyframes innerWave{
+  0%{transform:scale(1) translate(0,0);}
+  50%{transform:scale(1.05) translate(5px,-5px);}
+  100%{transform:scale(1) translate(0,0);}
+}
+
+/* ================= SCROLL COLOR INTERACTION ================= */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:linear-gradient(135deg, #0a84ff, #5856d6, #ff2d55);
+  mix-blend-mode:overlay;
+  opacity:0.1;
+  pointer-events:none;
+  z-index:-3;
+  animation:scrollColor 20s linear infinite alternate;
+}
+@keyframes scrollColor{
+  0%{background-position:0% 0%;}
+  100%{background-position:100% 100%;}
+}
+
+/* ================= HEADER ================= */
+.header{
+  text-align:center;
+  margin-bottom:28px;
+  position:relative;
+  z-index:1;
+}
+.header h1{
+  font-size:30px;
+  font-weight:700;
+  letter-spacing:.4px;
+}
+.header p{
+  font-size:15px;
+  opacity:.7;
+  margin-top:6px;
+}
+
+/* ================= INPUTS ================= */
+.field{
+  margin-top:18px;
+  position:relative;
+  z-index:1;
+}
+label{
+  font-size:13px;
+  opacity:.7;
+  margin-bottom:6px;
+  display:block;
+}
+input,textarea,select{
+  width:100%;
+  padding:16px 18px;
+  border-radius:20px;
+  border:none;
+  outline:none;
+  background:rgba(255,255,255,.15);
+  color:#fff;
+  font-size:15px;
+  backdrop-filter:blur(14px);
+  transition:.25s;
+}
+input::placeholder,textarea::placeholder{
+  color:rgba(255,255,255,.6);
+}
+input:focus,textarea:focus,select:focus{
+  background:rgba(255,255,255,.25);
+  box-shadow:0 0 0 2px rgba(0,122,255,.6);
+}
+
+/* ================= BUTTON ================= */
+button{
+  margin-top:24px;
+  width:100%;
+  padding:16px;
+  border:none;
+  border-radius:22px;
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+  background:linear-gradient(180deg,#0a84ff,#0058df);
+  color:#fff;
+  transition:.25s;
+  position:relative;
+  z-index:1;
+}
+button:hover{
+  transform:translateY(-1px) scale(1.02);
+  box-shadow:0 12px 35px rgba(10,132,255,.45);
+}
+
+/* ================= RESULT ================= */
+#result{
+  margin-top:22px;
+  padding:20px;
+  border-radius:22px;
+  background:rgba(0,0,0,.35);
+  font-size:14px;
+  min-height:70px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);
+  position:relative;
+  z-index:1;
+}
+
+/* ================= FOOTER ================= */
+.footer{
+  margin-top:20px;
+  text-align:center;
+  font-size:12px;
+  opacity:.5;
+  position:relative;
+  z-index:1;
+}
+
+/* ================= MOBILE ================= */
+@media(max-width:600px){
+  .app{
+    padding:28px;
+    border-radius:28px;
+  }
+  .header h1{
+    font-size:26px;
+  }
+  .header p{
+    font-size:13px;
+  }
+}

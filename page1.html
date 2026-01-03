@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <title>رمزگذاری پیشرفته متن</title>
+  <style>
+    body {
+      background-color: #1e1e2f;
+      color: #fff;
+      font-family: Tahoma, sans-serif;
+      padding: 30px;
+      text-align: center;
+    }
+    h1 { color: #00ffc3; }
+    textarea, input, select {
+      width: 80%;
+      margin: 10px auto;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      resize: vertical;
+    }
+    textarea {
+      height: 150px;
+      background-color: #2e2e3e;
+      color: #eee;
+    }
+    input, select {
+      background-color: #2e2e3e;
+      color: #00ffd1;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #00ffc3;
+      color: #000;
+      font-weight: bold;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    button:hover { background-color: #00bfa3; }
+    #result {
+      margin-top: 20px;
+      background-color: #121220;
+      padding: 15px;
+      border-radius: 10px;
+      color: #00ff80;
+      white-space: pre-wrap;
+      user-select: all;
+      cursor: pointer;
+      min-height: 50px;
+    }
+    #extraInfo {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #bbb;
+      direction: ltr;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 رمزگذاری پیشرفته متن</h1>
+  <textarea id="inputText" placeholder="متن یا رمز را وارد کنید..."></textarea><br>
+  <input id="password" type="text" placeholder="کلید/رمز عبور را وارد کنید" autocomplete="new-password" /><br>
+<div id="passwordStrength" style="margin-top:5px; font-size:14px; color:#bbb;">
+  قدرت رمز: -
+</div>
+<button id="generatePassword" type="button">تولید رمز عبور قوی</button>
+
+  <label>🔐 الگوریتم رمزگذاری:</label>
+  <select id="algo">
+    <option value="AES-GCM">AES-GCM</option>
+    <option value="AES-CBC">AES-CBC</option>
+    <option value="RSA">RSA (کلید عمومی/خصوصی)</option>
+    <option value="Caesar">Caesar Cipher</option>
+    <option value="Vigenere">Vigenère Cipher</option>
+    <option value="Base64">Base64</option>
+    <option value="SHA-256">SHA-256 (رمز یک‌طرفه)</option>
+    <option value="SHA-512">SHA-512 (رمز یک‌طرفه)</option>
+    <option value="Playfair">Playfair Cipher</option>
+    <option value="OTP">One-Time Pad (OTP)</option>
+    <option value="Morse">Morse Code</option>
+    <option value="ROT13">ROT13</option>
+    <option value="RC4">RC4</option>
+  </select><br>
+
+  <label>🧾 فرمت خروجی:</label>
+  <select id="format">
+    <option value="plain">خروجی یک‌خطی</option>
+    <option value="spaced">با فاصله هر 64 نویسه</option>
+    <option value="newline">با خط جدید هر 64 نویسه</option>
+    <option value="base64" selected>Base64</option>
+    <option value="hex">Hex</option>
+    <option value="binary">Binary</option>
+  </select>
+
+  <label>🔁 تعداد تکرار PBKDF2:</label>
+  <input id="iterations" type="number" min="1000" step="1000" value="100000" />
+
+  <label>📏 طول کلید (بیت):</label>
+  <select id="keyLength">
+    <option value="128">128 بیت</option>
+    <option value="192">192 بیت</option>
+    <option value="256" selected>256 بیت</option>
+  </select>
+
+  <label>🔍 الگوریتم هش:</label>
+  <select id="hashAlgo">
+    <option value="SHA-256" selected>SHA-256</option>
+    <option value="SHA-384">SHA-384</option>
+    <option value="SHA-512">SHA-512</option>
+  </select><br>
+    <button onclick="window.location.href='messag.html'">پیام های من
+    <button onclick="window.location.href='page2.html'">نسخه ویژه
+  <button onclick="encryptText()">🔒 رمزگذاری</button>
+  <button onclick="decryptText()">🔓 رمزگشایی</button>
+  <button onclick="generateKeyPair()">🔑 تولید کلید RSA</button>
+  <button onclick="clearFields()">🧹 پاک‌سازی</button>
+  <div id="result" onclick="copyToClipboard()">نتیجه در اینجا نمایش داده می‌شود...</div>
+  <div id="extraInfo"></div>
+
+  <script>
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+
+    function copyToClipboard() {
+      const result = document.getElementById("result").textContent;
+      if (result && result !== "نتیجه در اینجا نمایش داده می‌شود...") {
+        navigator.clipboard.writeText(result);
+        alert("متن کپی شد!");
+      }
+    }
+
+    function clearFields() {
+      document.getElementById("inputText").value = "";
+      document.getElementById("password").value = "";
+      document.getElementById("result").textContent = "نتیجه در اینجا نمایش داده می‌شود...";
+      document.getElementById("extraInfo").textContent = "";
+    }
+
+    let rsaKeys = {};
+
+    async function generateKeyPair() {
+      rsaKeys = await crypto.subtle.generateKey(
+        { name: "RSA-OAEP", modulusLength: 4048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+        true,
+        ["encrypt", "decrypt"]
+      );
+      const pubKey = await crypto.subtle.exportKey("spki", rsaKeys.publicKey);
+      const privKey = await crypto.subtle.exportKey("pkcs8", rsaKeys.privateKey);
+      const pubB64 = btoa(String.fromCharCode(...new Uint8Array(pubKey)));
+      const privB64 = btoa(String.fromCharCode(...new Uint8Array(privKey)));
+      document.getElementById("result").textContent = `🔑 کلید عمومی:\n${pubB64}\n\n🔒 کلید خصوصی:\n${privB64}`;
+      document.getElementById("extraInfo").textContent = "✅ جفت‌کلید RSA تولید شد";
+    }
+
+    async function getAesKey(password, algo) {
+      const iterations = parseInt(document.getElementById("iterations").value);
+      const keyLength = parseInt(document.getElementById("keyLength").value);
+      const hashAlgo = document.getElementById("hashAlgo").value;
+      const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
+      return crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt: enc.encode("salt123"), iterations, hash: hashAlgo },
+        keyMaterial,
+        { name: algo, length: keyLength },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+
+    async function encryptText() {
+      const text = document.getElementById("inputText").value;
+      const password = document.getElementById("password").value;
+      const algo = document.getElementById("algo").value;
+      if (!text || (!password && !["SHA-256", "SHA-512", "Base64", "Morse", "ROT13"].includes(algo))) return alert("لطفاً متن و کلید را وارد کنید.");
+
+      try {
+        let result = "";
+        switch (algo) {
+          case "AES-GCM":
+          case "AES-CBC":
+            const key = await getAesKey(password, algo);
+            const iv = crypto.getRandomValues(new Uint8Array(algo === "AES-GCM" ? 12 : 16));
+            const encrypted = await crypto.subtle.encrypt({ name: algo, iv }, key, enc.encode(text));
+            result = btoa(String.fromCharCode(...iv) + String.fromCharCode(...new Uint8Array(encrypted)));
+            break;
+          case "RSA":
+            const pubKeyBuffer = Uint8Array.from(atob(password), c => c.charCodeAt(0)).buffer;
+            const pubKey = await crypto.subtle.importKey("spki", pubKeyBuffer, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
+            const rsaEncrypted = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, pubKey, enc.encode(text));
+            result = btoa(String.fromCharCode(...new Uint8Array(rsaEncrypted)));
+            break;
+          case "Caesar":
+            result = caesarEncrypt(text, parseInt(password) || 3);
+            break;
+          case "Vigenere":
+            result = vigenereEncrypt(text, password);
+            break;
+          case "Base64":
+            result = btoa(text);
+            break;
+          case "SHA-256":
+            const hash256 = await crypto.subtle.digest("SHA-256", enc.encode(text));
+            result = Array.from(new Uint8Array(hash256)).map(b => b.toString(16).padStart(2, "0")).join("");
+            break;
+          case "SHA-512":
+            const hash512 = await crypto.subtle.digest("SHA-512", enc.encode(text));
+            result = Array.from(new Uint8Array(hash512)).map(b => b.toString(16).padStart(2, "0")).join("");
+            break;
+          case "Playfair":
+            result = playfairEncrypt(text, password);
+            break;
+          case "OTP":
+            result = otpEncrypt(text, password);
+            break;
+          case "Morse":
+            result = morseEncrypt(text);
+            break;
+          case "ROT13":
+            result = rot13(text);
+            break;
+          case "RC4":
+            result = btoa(rc4(password, text));
+            break;
+        }
+        document.getElementById("result").textContent = result;
+        document.getElementById("extraInfo").textContent = `✅ رمزگذاری با ${algo}`;
+      } catch (e) {
+        document.getElementById("extraInfo").textContent = "❌ خطا: " + e.message;
+      }
+    }
+
+    async function decryptText() {
+      const text = document.getElementById("inputText").value;
+      const password = document.getElementById("password").value;
+      const algo = document.getElementById("algo").value;
+      if (!text || !password) return alert("لطفاً متن و کلید را وارد کنید.");
+
+      try {
+        let result = "";
+        switch (algo) {
+          case "AES-GCM":
+          case "AES-CBC":
+            const key = await getAesKey(password, algo);
+            const data = atob(text);
+            const ivLength = algo === "AES-GCM" ? 12 : 16;
+            const iv = new Uint8Array(data.slice(0, ivLength).split('').map(c => c.charCodeAt(0)));
+            const cipher = new Uint8Array(data.slice(ivLength).split('').map(c => c.charCodeAt(0)));
+            const decrypted = await crypto.subtle.decrypt({ name: algo, iv }, key, cipher);
+            result = dec.decode(decrypted);
+            break;
+          case "RSA":
+            const privKeyBuffer = Uint8Array.from(atob(password), c => c.charCodeAt(0)).buffer;
+            const privKey = await crypto.subtle.importKey("pkcs8", privKeyBuffer, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["decrypt"]);
+            const decryptedRSA = await crypto.subtle.decrypt({ name: "RSA-OAEP" }, privKey, Uint8Array.from(atob(text), c => c.charCodeAt(0)));
+            result = dec.decode(decryptedRSA);
+            break;
+          case "Caesar":
+            result = caesarDecrypt(text, parseInt(password) || 3);
+            break;
+          case "Vigenere":
+            result = vigenereDecrypt(text, password);
+            break;
+          case "Base64":
+            result = atob(text);
+            break;
+          case "Playfair":
+            result = playfairDecrypt(text, password);
+            break;
+          case "OTP":
+            result = otpDecrypt(text, password);
+            break;
+          case "Morse":
+            result = morseDecrypt(text);
+            break;
+          case "ROT13":
+            result = rot13(text);
+            break;
+          case "RC4":
+            result = rc4(password, atob(text));
+            break;
+          default:
+            result = "❌ این الگوریتم قابل رمزگشایی نیست.";
+        }
+        document.getElementById("result").textContent = result;
+        document.getElementById("extraInfo").textContent = `✅ رمزگشایی با ${algo}`;
+      } catch (e) {
+        document.getElementById("extraInfo").textContent = "❌ خطا: " + e.message;
+      }
+    }
+
+    function caesarEncrypt(text, shift) {
+      return text.replace(/[a-z]/gi, c => {
+        const base = c <= 'Z' ? 65 : 97;
+        return String.fromCharCode(((c.charCodeAt(0) - base + shift) % 26) + base);
+      });
+    }
+
+    function caesarDecrypt(text, shift) {
+      return caesarEncrypt(text, 26 - (shift % 26));
+    }
+
+    function vigenereEncrypt(text, key) {
+      key = key.toUpperCase().replace(/[^A-Z]/g, '');
+      let j = 0;
+      return text.replace(/[a-z]/gi, c => {
+        const base = c <= 'Z' ? 65 : 97;
+        const k = key.charCodeAt(j++ % key.length) - 65;
+        return String.fromCharCode(((c.charCodeAt(0) - base + k) % 26) + base);
+      });
+    }
+
+    function vigenereDecrypt(text, key) {
+      key = key.toUpperCase().replace(/[^A-Z]/g, '');
+      let j = 0;
+      return text.replace(/[a-z]/gi, c => {
+        const base = c <= 'Z' ? 65 : 97;
+        const k = key.charCodeAt(j++ % key.length) - 65;
+        return String.fromCharCode(((c.charCodeAt(0) - base - k + 26) % 26) + base);
+      });
+    }
+
+    function otpEncrypt(text, key) {
+      if (key.length < text.length) return "کلید باید حداقل به اندازه متن باشد.";
+      return Array.from(text).map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ key.charCodeAt(i))).join('');
+    }
+
+    function otpDecrypt(text, key) {
+      return otpEncrypt(text, key);
+    }
+
+    function morseEncrypt(text) {
+      const morseMap = {
+        A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.',
+        G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..',
+        M: '--', N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.',
+        S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-',
+        Y: '-.--', Z: '--..', 0: '-----', 1: '.----', 2: '..---',
+        3: '...--', 4: '....-', 5: '.....', 6: '-....', 7: '--...',
+        8: '---..', 9: '----.', ' ': '/'
+      };
+      return text.toUpperCase().split('').map(ch => morseMap[ch] || '').join(' ');
+    }
+
+    function morseDecrypt(code) {
+      const morseMap = {
+        '.-': 'A', '-...': 'B', '-.-.': 'C', '-..': 'D', '.': 'E',
+        '..-.': 'F', '--.': 'G', '....': 'H', '..': 'I', '.---': 'J',
+        '-.-': 'K', '.-..': 'L', '--': 'M', '-.': 'N', '---': 'O',
+        '.--.': 'P', '--.-': 'Q', '.-.': 'R', '...': 'S', '-': 'T',
+        '..-': 'U', '...-': 'V', '.--': 'W', '-..-': 'X', '-.--': 'Y',
+        '--..': 'Z', '-----': '0', '.----': '1', '..---': '2',
+        '...--': '3', '....-': '4', '.....': '5', '-....': '6',
+        '--...': '7', '---..': '8', '----.': '9', '/': ' '
+      };
+      return code.split(' ').map(code => morseMap[code] || '').join('');
+    }
+
+    function rot13(text) {
+      return text.replace(/[a-zA-Z]/g, c => {
+        const base = c <= 'Z' ? 65 : 97;
+        return String.fromCharCode(((c.charCodeAt(0) - base + 13) % 26) + base);
+      });
+    }
+
+    function rc4(key, str) {
+      let s = [], j = 0, x, res = '';
+      for (let i = 0; i < 256; i++) s[i] = i;
+      for (let i = 0; i < 256; i++) {
+        j = (j + s[i] + key.charCodeAt(i % key.length)) % 256;
+        [s[i], s[j]] = [s[j], s[i]];
+      }
+      i = j = 0;
+      for (let y = 0; y < str.length; y++) {
+        i = (i + 1) % 256;
+        j = (j + s[i]) % 256;
+        [s[i], s[j]] = [s[j], s[i]];
+        x = s[(s[i] + s[j]) %256];
+        res += String.fromCharCode(str.charCodeAt(y) ^ x);
+      }
+      return res;
+    }
+
+    function playfairEncrypt(plaintext, key) {
+      key = key.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, '');
+      plaintext = plaintext.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, '');
+
+      let matrixKey = "";
+      for (let ch of key) {
+        if (!matrixKey.includes(ch)) matrixKey += ch;
+      }
+
+      const alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
+      for (let ch of alphabet) {
+        if (!matrixKey.includes(ch)) matrixKey += ch;
+      }
+
+      const matrix = [];
+      for (let i = 0; i < 5; i++) {
+        matrix.push(matrixKey.slice(i * 5, i * 5 + 5).split(''));
+      }
+
+      let pairs = [];
+      for (let i = 0; i < plaintext.length; i += 2) {
+        let a = plaintext[i];
+        let b = plaintext[i + 1] || 'X';
+        if (a === b) {
+          pairs.push([a, 'X']);
+          i--;
+        } else {
+          pairs.push([a, b]);
+        }
+      }
+
+      function findPos(ch) {
+        for (let r = 0; r < 5; r++) {
+          for (let c = 0; c < 5; c++) {
+            if (matrix[r][c] === ch) return [r, c];
+          }
+        }
+      }
+
+      let ciphertext = "";
+      for (let [a, b] of pairs) {
+        let [r1, c1] = findPos(a);
+        let [r2, c2] = findPos(b);
+        if (r1 === r2) {
+          ciphertext += matrix[r1][(c1 + 1) % 5] + matrix[r2][(c2 + 1) % 5];
+        } else if (c1 === c2) {
+          ciphertext += matrix[(r1 + 1) % 5][c1] + matrix[(r2 + 1) % 5][c2];
+        } else {
+          ciphertext += matrix[r1][c2] + matrix[r2][c1];
+        }
+      }
+
+      return ciphertext;
+    }
+
+    function playfairDecrypt(ciphertext, key) {
+      key = key.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, '');
+      ciphertext = ciphertext.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, '');
+
+      let matrixKey = "";
+      for (let ch of key) {
+        if (!matrixKey.includes(ch)) matrixKey += ch;
+      }
+
+      const alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
+      for (let ch of alphabet) {
+        if (!matrixKey.includes(ch)) matrixKey += ch;
+      }
+
+      const matrix = [];
+      for (let i = 0; i < 5; i++) {
+        matrix.push(matrixKey.slice(i * 5, i * 5 + 5).split(''));
+      }
+
+      function findPos(ch) {
+        for (let r = 0; r < 5; r++) {
+          for (let c = 0; c < 5; c++) {
+            if (matrix[r][c] === ch) return [r, c];
+          }
+        }
+      }
+
+      let plaintext = "";
+      for (let i = 0; i < ciphertext.length; i += 2) {
+        const a = ciphertext[i];
+        const b = ciphertext[i + 1];
+        let [r1, c1] = findPos(a);
+        let [r2, c2] = findPos(b);
+
+        if (r1 === r2) {
+          plaintext += matrix[r1][(c1 + 4) % 5] + matrix[r2][(c2 + 4) % 5];
+        } else if (c1 === c2) {
+          plaintext += matrix[(r1 + 4) % 5][c1] + matrix[(r2 + 4) % 5][c2];
+        } else {
+          plaintext += matrix[r1][c2] + matrix[r2][c1];
+        }
+      }
+
+      return plaintext;
+    }
+document.getElementById("password").addEventListener("input", function () {
+  const strengthText = document.getElementById("passwordStrength");
+  const pwd = this.value;
+
+  let strength = 0;
+  if (pwd.length >= 8) strength++;
+  if (/[A-Z]/.test(pwd)) strength++;
+  if (/[0-9]/.test(pwd)) strength++;
+  if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+
+  if (!pwd) {
+    strengthText.textContent = "قدرت رمز: -";
+    strengthText.style.color = "#bbb";
+  } else if (strength <= 1) {
+    strengthText.textContent = "قدرت رمز: ضعیف";
+    strengthText.style.color = "red";
+  } else if (strength === 2) {
+    strengthText.textContent = "قدرت رمز: متوسط";
+    strengthText.style.color = "orange";
+  } else {
+    strengthText.textContent = "قدرت رمز: قوی";
+    strengthText.style.color = "lime";
+  }
+});
+  </script>
+<script>
+function generateStrongPassword(length = 12) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * chars.length);
+        password += chars[randomIndex];
+    }
+    return password;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const button = document.getElementById("generatePassword");
+    const passwordField = document.getElementById("password");
+
+    button.addEventListener("click", function() {
+        passwordField.value = generateStrongPassword(12);
+    });
+});
+</script>
+<link rel="stylesheet" href="liquid-glass1.css">
+<script src="liquid-glass.js" defer></script>
+<style>
+:root{
+  --theme:#00e5ff;
+}
+body{
+  background:
+    radial-gradient(circle at top,var(--theme),#000);
+  color:white;
+}
+</style>
+</body>
+</html>

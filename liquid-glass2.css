@@ -1,0 +1,281 @@
+/* ================= RESET ================= */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+}
+
+html,body{
+  width:100%;
+  min-height:100%;
+  overflow:auto;
+  background:#0a0a0a; /* زمینه تاریک */
+  color:#fff;
+  scroll-behavior:smooth;
+}
+
+/* ================= BACKGROUND MOTION ================= */
+.bg{
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 25% 25%,rgba(0,255,255,.35),transparent 40%),
+    radial-gradient(circle at 75% 35%,rgba(255,0,255,.35),transparent 40%),
+    radial-gradient(circle at 50% 80%,rgba(255,255,0,.25),transparent 45%);
+  filter:blur(90px);
+  animation:floatBg 25s ease-in-out infinite alternate;
+  z-index:-2;
+}
+@keyframes floatBg{
+  0%{transform:translateY(-50px);}
+  50%{transform:translateY(50px);}
+  100%{transform:translateY(-50px);}
+}
+
+/* ================= LIGHT GLOW ================= */
+.light{
+  position:fixed;
+  top:50%;
+  left:50%;
+  width:650px;
+  height:650px;
+  border-radius:50%;
+  background:radial-gradient(circle,
+    rgba(0,255,255,.25),
+    rgba(255,0,255,.2),
+    rgba(255,255,0,.15),
+    transparent 70%);
+  filter:blur(120px);
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  z-index:-1;
+  animation:lightPulse 8s ease-in-out infinite alternate;
+}
+@keyframes lightPulse{
+  0%{transform:translate(-50%,-50%) scale(1);}
+  50%{transform:translate(-50%,-50%) scale(1.15);}
+  100%{transform:translate(-50%,-50%) scale(1);}
+}
+
+/* ================= SCROLL WRAPPER ================= */
+.liquid-scroll{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:120px 12px;
+}
+
+/* ================= GLASS CARD ================= */
+.app{
+  width:min(94%,880px);
+  padding:36px;
+  border-radius:36px;
+  background:rgba(255,255,255,.08); /* شیشه‌ای نیمه شفاف */
+  backdrop-filter:blur(42px) saturate(180%);
+  -webkit-backdrop-filter:blur(42px);
+  box-shadow:
+    0 35px 100px rgba(0,0,0,.75),
+    inset 0 1px 0 rgba(255,255,255,.2);
+  position:relative;
+  overflow:hidden;
+  transition:transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ================= CARD HOVER EFFECT (3D Tilt) ================= */
+.app:hover{
+  rotateX(6deg) rotateY(-6deg) scale(1.03);
+  box-shadow:0 50px 140px rgba(0,0,0,.85),
+             inset 0 2px 0 rgba(255,255,255,.25);
+}
+
+/* ================= COLOR WAVES ================= */
+.app::before, .app::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:conic-gradient(
+    from 0deg,
+    rgba(0,255,255,.3),
+    rgba(255,0,255,.3),
+    rgba(255,255,0,.25),
+    rgba(0,255,0,.2),
+    rgba(255,165,0,.25),
+    rgba(0,255,255,.3)
+  );
+  mix-blend-mode:overlay;
+  opacity:0.4;
+  pointer-events:none;
+  animation:waveSpin 18s linear infinite;
+}
+.app::after{
+  animation-duration:25s;
+  opacity:0.3;
+}
+@keyframes waveSpin{
+  0%{transform:rotate(0deg);}
+  100%{transform:rotate(360deg);}
+}
+
+/* ================= INNER RADIAL WAVE ================= */
+.app .wave{
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:radial-gradient(circle at center,
+    rgba(255,255,255,.05),
+    transparent 70%);
+  animation:innerWave 6s ease-in-out infinite alternate;
+  pointer-events:none;
+  z-index:0;
+}
+@keyframes innerWave{
+  0%{transform:scale(1) translate(0,0);}
+  50%{transform:scale(1.05) translate(5px,-5px);}
+  100%{transform:scale(1) translate(0,0);}
+}
+
+/* ================= SCROLL COLOR INTERACTION ================= */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:linear-gradient(135deg, #00ffff, #ff00ff, #ffff00, #00ff00, #ffa500);
+  mix-blend-mode:overlay;
+  opacity:0.15;
+  pointer-events:none;
+  z-index:-3;
+  animation:scrollColor 22s linear infinite alternate;
+}
+@keyframes scrollColor{
+  0%{background-position:0% 0%;}
+  100%{background-position:100% 100%;}
+}
+
+/* ================= HEADER ================= */
+.header{
+  text-align:center;
+  margin-bottom:28px;
+  position:relative;
+  z-index:1;
+}
+.header h1{
+  font-size:30px;
+  font-weight:700;
+  letter-spacing:.4px;
+}
+.header p{
+  font-size:15px;
+  opacity:.75;
+  margin-top:6px;
+}
+
+/* ================= INPUTS ================= */
+.field{
+  margin-top:18px;
+  position:relative;
+  z-index:1;
+}
+label{
+  font-size:13px;
+  opacity:.7;
+  margin-bottom:6px;
+  display:block;
+}
+input,textarea,select{
+  width:100%;
+  padding:16px 18px;
+  border-radius:20px;
+  border:none;
+  outline:none;
+  background:rgba(255,255,255,.15);
+  color:#fff;
+  font-size:15px;
+  backdrop-filter:blur(14px);
+  transition:.25s;
+}
+input::placeholder,textarea::placeholder{
+  color:rgba(255,255,255,.6);
+}
+input:focus,textarea:focus,select:focus{
+  background:rgba(255,255,255,.25);
+  box-shadow:0 0 0 2px rgba(0,255,255,.6);
+}
+
+/* ================= BUTTON ================= */
+button{
+  margin-top:24px;
+  width:100%;
+  padding:16px 18px;
+  border:none;
+  border-radius:22px;
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+
+  /* Gradient بر اساس رنگ‌های پس‌زمینه ولی کمی پررنگ‌تر */
+  background: linear-gradient(
+    180deg,
+    rgba(0, 255, 255, 0), /* Cyan پررنگ‌تر */
+    rgba(255, 0, 255, 0)  /* Magenta پررنگ‌تر */
+  );
+
+  color:#fff;
+  transition:.3s ease;
+  position:relative;
+  z-index:1;
+
+  /* افکت Blend با پس‌زمینه */
+  mix-blend-mode:screen;
+}
+
+/* حالت Hover */
+button:hover{
+  transform:translateY(-1px) scale(1.03);
+  box-shadow:0 12px 35px rgba(55, 174, 77, 0.366); /* برجسته‌تر روی hover */
+  background: linear-gradient(
+    180deg,
+    rgba(136, 177, 59, 0.388),
+    rgba(55, 174, 77, 0.31)
+  );
+}
+
+
+/* ================= RESULT ================= */
+#result{
+  margin-top:22px;
+  padding:20px;
+  border-radius:22px;
+  background:rgba(0,0,0,.35);
+  font-size:14px;
+  min-height:70px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);
+  position:relative;
+  z-index:1;
+}
+
+/* ================= FOOTER ================= */
+.footer{
+  margin-top:20px;
+  text-align:center;
+  font-size:12px;
+  opacity:.5;
+  position:relative;
+  z-index:1;
+}
+
+/* ================= MOBILE ================= */
+@media(max-width:600px){
+  .app{
+    padding:28px;
+    border-radius:28px;
+  }
+  .header h1{
+    font-size:26px;
+  }
+  .header p{
+    font-size:13px;
+  }
+}

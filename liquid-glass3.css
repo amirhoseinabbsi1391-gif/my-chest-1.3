@@ -1,0 +1,176 @@
+/* ================= ROOT COLORS ================= */
+:root{
+  --blue-main: 10,132,255;
+  --cyan-soft: 90,200,250;
+  --violet-soft: 180,120,255;
+  --glass-bg: rgba(255,255,255,.08);
+  --glass-border: rgba(255,255,255,.22);
+}
+
+/* ================= RESET ================= */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+}
+
+html,body{
+  width:100%;
+  min-height:100%;
+  background:#000;
+  color:#fff;
+  overflow-x:hidden;
+}
+
+/* ================= LIQUID BACKGROUND ================= */
+body::before{
+  content:"";
+  position:fixed;
+  inset:-20%;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(var(--cyan-soft),.35), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(var(--blue-main),.35), transparent 45%),
+    radial-gradient(circle at 50% 80%, rgba(var(--violet-soft),.25), transparent 50%);
+  filter:blur(80px);
+  z-index:-2;
+}
+
+/* ================= CENTER LAYOUT ================= */
+.ui{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:80px 12px;
+}
+
+/* ================= GLASS CARD ================= */
+.card{
+  width:min(92%,900px);
+  padding:42px 60px;
+  border-radius:42px;
+  background:var(--glass-bg);
+  backdrop-filter:blur(36px) saturate(200%);
+  -webkit-backdrop-filter:blur(36px);
+  box-shadow:
+    0 60px 160px rgba(0,0,0,.85),
+    inset 0 1px 0 var(--glass-border);
+  text-align:center;
+  position:relative;
+}
+
+/* نور مایع روی کارت */
+.card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:
+    radial-gradient(circle at 25% 20%, rgba(var(--cyan-soft),.25), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(var(--blue-main),.25), transparent 45%);
+  mix-blend-mode:screen;
+  pointer-events:none;
+}
+
+/* ================= TEXT ================= */
+h1{
+  font-size:32px;
+  font-weight:600;
+}
+
+.subtitle{
+  margin-top:10px;
+  font-size:14px;
+  opacity:.7;
+}
+
+/* ================= CONTROLS ================= */
+.controls{
+  margin-top:30px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  justify-content:center;
+}
+
+/* ================= LIQUID BUTTON ================= */
+button{
+  position:relative;
+  padding:14px 26px;
+  border-radius:18px;
+  border:none;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:600;
+  color:#fff;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--cyan-soft),.95),
+      rgba(var(--blue-main),.95)
+    );
+
+  box-shadow:
+    0 14px 40px rgba(var(--blue-main),.45),
+    inset 0 1px 0 rgba(255,255,255,.5);
+
+  transition:.35s cubic-bezier(.2,.8,.2,1);
+}
+
+/* موج نوری */
+button::after{
+  content:"";
+  position:absolute;
+  inset:-60%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.45), transparent 55%);
+  opacity:.35;
+  transition:.4s;
+}
+
+button:hover{
+  transform:translateY(-2px) scale(1.05);
+  box-shadow:
+    0 22px 60px rgba(var(--cyan-soft),.65),
+    inset 0 1px 0 rgba(255,255,255,.65);
+}
+
+button:hover::after{
+  inset:-20%;
+}
+
+button:active{
+  transform:scale(.96);
+}
+
+/* ================= INFO PANEL ================= */
+.info{
+  margin-top:30px;
+  padding:22px 26px;
+  border-radius:26px;
+  background:rgba(255,255,255,.07);
+  backdrop-filter:blur(26px) saturate(180%);
+  box-shadow:
+    0 40px 120px rgba(0,0,0,.7),
+    inset 0 1px 0 rgba(255,255,255,.2);
+  font-size:14px;
+}
+
+/* ================= LOW END DEVICES ================= */
+.low-end *{
+  animation:none !important;
+  transition:none !important;
+  backdrop-filter:none !important;
+}
+
+/* ================= MOBILE ================= */
+@media(max-width:600px){
+  .card{
+    padding:28px;
+    border-radius:28px;
+  }
+  h1{ font-size:24px; }
+  button{ padding:12px 20px; }
+}
